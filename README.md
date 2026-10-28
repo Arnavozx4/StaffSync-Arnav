@@ -20,6 +20,8 @@ StaffSync includes preloaded demo credentials and **1-click quick-login buttons*
 | **Department Manager** | `manager@staffsync.demo` | `Demo@12345` | Team roster supervision, leave approval/rejection, employee training assignments |
 | **Staff Member** | `employee@staffsync.demo` | `Demo@12345` | Daily digital punch in/out, leave applications, course progress, announcements |
 
+At server startup, StaffSync repairs these three demo accounts and restores their documented password, even when the database already contains other records. Set `DEMO_ACCOUNTS_ENABLED=false` to disable this behavior for deployments that should not expose shared demo logins. This repair does not clear or reseed other collections.
+
 ---
 
 ## 🛠️ Technology Stack

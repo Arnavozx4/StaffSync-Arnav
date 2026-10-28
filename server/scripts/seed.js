@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const User = require('../models/User');
@@ -11,6 +10,29 @@ const Announcement = require('../models/Announcement');
 const Training = require('../models/Training');
 const Notification = require('../models/Notification');
 const { connectDB, disconnectDB } = require('../config/db');
+
+const DEMO_ACCOUNTS = [
+  { name: 'Eleanor Vance (HR Director)', email: 'hr@staffsync.demo', role: 'admin' },
+  { name: 'Marcus Sterling (Engineering Lead)', email: 'manager@staffsync.demo', role: 'manager' },
+  { name: 'Sophia Chen (Senior Frontend Engineer)', email: 'employee@staffsync.demo', role: 'employee' },
+];
+const DEMO_PASSWORD = 'Demo@12345';
+
+// Keep the documented evaluation accounts usable even when the database already
+// contains application data and the full destructive seed is not appropriate.
+const ensureDemoAccounts = async () => {
+  for (const account of DEMO_ACCOUNTS) {
+    let user = await User.findOne({ email: account.email }).select('+password');
+    if (!user) {
+      user = new User(account);
+    }
+    user.name = account.name;
+    user.role = account.role;
+    user.isActive = true;
+    user.password = DEMO_PASSWORD;
+    await user.save();
+  }
+};
 
 const seedData = async (shouldExit = true) => {
   try {
@@ -32,7 +54,7 @@ const seedData = async (shouldExit = true) => {
 
     // 1. Create Core Users
     // Common password: Demo@12345
-    const demoPassword = 'Demo@12345';
+    const demoPassword = DEMO_PASSWORD;
 
     const hrUser = await User.create({
       name: 'Eleanor Vance (HR Director)',
@@ -561,3 +583,4 @@ if (require.main === module) {
 }
 
 module.exports = seedData;
+module.exports.ensureDemoAccounts = ensureDemoAccounts;

@@ -9,6 +9,7 @@ const { connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const User = require('./models/User');
 const seedData = require('./scripts/seed');
+const { ensureDemoAccounts } = seedData;
 
 // Initialize app
 const app = express();
@@ -166,6 +167,14 @@ const startServer = async () => {
     }
   } catch (seedErr) {
     console.warn('Note on auto-seed:', seedErr.message);
+  }
+
+  // Repair the documented role demo logins without clearing existing records.
+  // Set DEMO_ACCOUNTS_ENABLED=false when these shared evaluation accounts should
+  // not be provisioned in a deployment.
+  if (process.env.DEMO_ACCOUNTS_ENABLED !== 'false') {
+    await ensureDemoAccounts();
+    console.log('🔐 Demo HR, manager, and employee logins are ready.');
   }
 
   const server = app.listen(PORT, () => {
