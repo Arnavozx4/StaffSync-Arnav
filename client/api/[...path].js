@@ -1,6 +1,9 @@
-const { app, initializeDatabase } = require('../../server/server');
+import { createRequire } from 'node:module';
 
-module.exports = async (req, res) => {
+const require = createRequire(import.meta.url);
+const { app, initializeDatabase } = require('../../server/server.js');
+
+export default async function handler(req, res) {
   try {
     await initializeDatabase();
     return app(req, res);
@@ -13,4 +16,4 @@ module.exports = async (req, res) => {
         : 'The API could not connect to its database. Check the Vercel function logs and database configuration.',
     });
   }
-};
+}
