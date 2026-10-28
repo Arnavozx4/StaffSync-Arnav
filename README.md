@@ -22,6 +22,8 @@ StaffSync includes preloaded demo credentials and **1-click quick-login buttons*
 
 At server startup, StaffSync repairs these three demo accounts and restores their documented password, even when the database already contains other records. Set `DEMO_ACCOUNTS_ENABLED=false` to disable this behavior for deployments that should not expose shared demo logins. This repair does not clear or reseed other collections.
 
+For evaluation, the login page also provides one-click HR, manager, and employee demo access without typing a password. Normal email-and-password login remains available.
+
 ---
 
 ## 🛠️ Technology Stack
@@ -227,25 +229,19 @@ Navigate to `http://localhost:5173` in your browser and click any of the **1-Cli
 3. Under **Network Access**, whitelist `0.0.0.0/0` (allow access from anywhere).
 4. Copy your connection string: `mongodb+srv://<user>:<password>@cluster0.mongodb.net/staffsync?retryWrites=true&w=majority`.
 
-### 2. Backend: Render
-1. Create a new Web Service on [Render](https://render.com) linked to your GitHub repo.
-2. Root Directory: `server`.
-3. Build Command: `npm install`.
-4. Start Command: `npm start`.
-5. Environment Variables:
-   - `NODE_ENV`: `production`
-   - `MONGO_URI`: `<Your MongoDB Atlas URI>`
-   - `JWT_SECRET`: `<Secure Random String>`
-   - `CLIENT_URL`: `https://staffsync-mern-hrms.vercel.app` (Your Vercel URL)
-6. Once deployed, note your Render URL: e.g. `https://staffsync-server.onrender.com`.
+### 2. Full-Stack Deployment: Vercel
+The React client and Express API are configured to deploy in one Vercel project. Vercel serves the client from `dist` and sends `/api/*` requests to the Express function in `client/api/[...path].js`.
 
-### 3. Frontend: Vercel
-1. Import your GitHub repository to [Vercel](https://vercel.com).
-2. Root Directory: `client`.
-3. Framework Preset: `Vite`.
-4. Environment Variables:
-   - `VITE_API_URL`: `https://staffsync-server.onrender.com` (Your Render backend URL)
-5. Deploy! Vercel's SPA rewrites (`vercel.json`) ensure all deep links (`/dashboard/hr`, `/attendance`, `/leaves`) resolve properly without 404s.
+1. Import the GitHub repository into [Vercel](https://vercel.com).
+2. Set **Root Directory** to `client` and enable **Include files outside the root directory in the Build Step**. The existing `staff-sync-arnav` project already has both settings.
+3. Use the **Vite** framework preset. `client/vercel.json` preserves SPA deep links and configures the API function.
+4. Add these project environment variables for **Production** and **Preview**:
+   - `MONGO_URI`: your persistent MongoDB Atlas connection string. Vercel functions cannot use the in-memory MongoDB fallback because each function instance is temporary.
+   - `JWT_SECRET`: a long, random signing secret.
+   - `DEMO_ACCOUNTS_ENABLED`: `true` to keep the evaluation accounts available, or `false` to disable shared demo access.
+5. Deploy. When the database has no users, the API initializes the demo dataset. The login accounts are listed above. HR can register additional employees from **Employees** in the HR workspace.
+
+The API and browser client share the same origin, so `VITE_API_URL` can remain unset. Deep links such as `/dashboard/hr`, `/attendance`, and `/leaves` are routed to the SPA by `client/vercel.json`.
 
 ---
 

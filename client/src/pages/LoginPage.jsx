@@ -30,11 +30,11 @@ const LoginPage = () => {
     }
   };
 
-  const handleQuickLogin = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
+  const handleQuickLogin = (demoRole) => {
+    setEmail('');
+    setPassword('');
     dispatch(clearAuthError());
-    dispatch(loginUser({ email: demoEmail, password: demoPassword })).then((result) => {
+    dispatch(loginUser({ demoRole })).then((result) => {
       if (loginUser.fulfilled.match(result)) {
         const { user } = result.payload;
         if (user.role === 'admin') navigate('/dashboard/hr');
@@ -77,7 +77,7 @@ const LoginPage = () => {
           Sign In to Your Workspace
         </h2>
         <p className="mt-1 text-xs text-slate-400">
-          Enter credentials or select a preloaded evaluation account below
+          Choose a demo role for one-click access, or enter your work credentials
         </p>
       </div>
 
@@ -86,29 +86,29 @@ const LoginPage = () => {
           {/* Quick Demo Logins Buttons */}
           <div className="mb-6 p-3.5 rounded-2xl bg-slate-900/80 border border-slate-700/70">
             <p className="text-[11px] font-bold uppercase tracking-wider text-brand-300 mb-2 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" /> 1-Click Evaluation Accounts
+              <ShieldCheck className="w-3.5 h-3.5" /> One-Click Demo Access
             </p>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => handleQuickLogin('hr@staffsync.demo', 'Demo@12345')}
+                onClick={() => handleQuickLogin('admin')}
                 className="py-2 px-2 text-center rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-semibold transition-all hover:scale-105"
               >
-                HR Admin
+                Enter HR
               </button>
               <button
                 type="button"
-                onClick={() => handleQuickLogin('manager@staffsync.demo', 'Demo@12345')}
+                onClick={() => handleQuickLogin('manager')}
                 className="py-2 px-2 text-center rounded-xl bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 text-purple-200 text-xs font-semibold transition-all hover:scale-105"
               >
-                Manager
+                Enter Manager
               </button>
               <button
                 type="button"
-                onClick={() => handleQuickLogin('employee@staffsync.demo', 'Demo@12345')}
+                onClick={() => handleQuickLogin('employee')}
                 className="py-2 px-2 text-center rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-200 text-xs font-semibold transition-all hover:scale-105"
               >
-                Employee
+                Enter Employee
               </button>
             </div>
           </div>

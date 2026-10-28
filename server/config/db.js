@@ -1,12 +1,19 @@
 const mongoose = require('mongoose');
 
 let memoryServer = null;
+let connectionPromise = null;
 
 const connectDB = async () => {
+  if (mongoose.connection.readyState === 1) return mongoose.connection;
+  if (connectionPromise) return connectionPromise;
+
   try {
     let mongoUri = process.env.MONGO_URI;
 
     if (!mongoUri || mongoUri.trim() === '') {
+      if (process.env.VERCEL) {
+        throw new Error('MONGO_URI is required for the Vercel deployment. Configure a persistent MongoDB Atlas connection string.');
+      }
       console.log('⚡ No MONGO_URI provided in environment. Initializing in-memory MongoDB fallback...');
       const { MongoMemoryServer } = require('mongodb-memory-server');
       memoryServer = await MongoMemoryServer.create();
@@ -14,13 +21,16 @@ const connectDB = async () => {
       console.log(`✅ MongoMemoryServer active at: ${mongoUri}`);
     }
 
-    const conn = await mongoose.connect(mongoUri, {
+    connectionPromise = mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 5000,
     });
+    const conn = await connectionPromise;
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host} [DB: ${conn.connection.name}]`);
     return conn;
   } catch (error) {
+    connectionPromise = null;
+    if (process.env.VERCEL) throw error;
     console.warn(`⚠️ Failed connecting to configured MongoDB: ${error.message}`);
     // If standard URI failed, attempt in-memory fallback for smooth evaluation
     try {
@@ -30,10 +40,12 @@ const connectDB = async () => {
         memoryServer = await MongoMemoryServer.create();
       }
       const fallbackUri = memoryServer.getUri();
-      const conn = await mongoose.connect(fallbackUri);
+      connectionPromise = mongoose.connect(fallbackUri);
+      const conn = await connectionPromise;
       console.log(`✅ Fallback In-Memory MongoDB Connected at ${fallbackUri}`);
       return conn;
     } catch (fallbackError) {
+      connectionPromise = null;
       console.error(`❌ Critical MongoDB Connection Error: ${fallbackError.message}`);
       throw fallbackError;
     }

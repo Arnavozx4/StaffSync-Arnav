@@ -153,29 +153,38 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
+let databaseInitialization = null;
+
+const initializeDatabase = () => {
+  if (!databaseInitialization) {
+    databaseInitialization = (async () => {
+      if (process.env.VERCEL && !process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is required for the Vercel deployment. Configure a strong signing secret.');
+      }
+
+      await connectDB();
+
+      const userCount = await User.countDocuments();
+      if (userCount === 0) {
+        console.log('⚡ Empty database detected. Auto-seeding initial demo data...');
+        await seedData(false);
+      }
+
+      if (process.env.DEMO_ACCOUNTS_ENABLED !== 'false') {
+        await ensureDemoAccounts();
+        console.log('🔐 Demo HR, manager, and employee logins are ready.');
+      }
+    })().catch((error) => {
+      databaseInitialization = null;
+      throw error;
+    });
+  }
+  return databaseInitialization;
+};
 
 // Start Server helper (exported for test suite)
 const startServer = async () => {
-  await connectDB();
-
-  // Auto-seed if database is empty (ensures zero-config evaluation)
-  try {
-    const userCount = await User.countDocuments();
-    if (userCount === 0) {
-      console.log('⚡ Empty database detected. Auto-seeding initial demo data...');
-      await seedData(false);
-    }
-  } catch (seedErr) {
-    console.warn('Note on auto-seed:', seedErr.message);
-  }
-
-  // Repair the documented role demo logins without clearing existing records.
-  // Set DEMO_ACCOUNTS_ENABLED=false when these shared evaluation accounts should
-  // not be provisioned in a deployment.
-  if (process.env.DEMO_ACCOUNTS_ENABLED !== 'false') {
-    await ensureDemoAccounts();
-    console.log('🔐 Demo HR, manager, and employee logins are ready.');
-  }
+  await initializeDatabase();
 
   const server = app.listen(PORT, () => {
     console.log(`🚀 StaffSync Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
@@ -185,11 +194,11 @@ const startServer = async () => {
   return server;
 };
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   startServer().catch((err) => {
     console.error('Fatal Server Startup Error:', err);
     process.exit(1);
   });
 }
 
-module.exports = { app, startServer };
+module.exports = { app, startServer, initializeDatabase };

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   login,
+  demoLogin,
   getMe,
   updateProfile,
   changePassword,
@@ -16,6 +17,7 @@ const {
 } = require('../validators/authValidator');
 
 router.post('/login', loginRules, validate, login);
+router.post('/demo-login', demoLogin);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 router.put('/change-password', protect, changePasswordRules, validate, changePassword);

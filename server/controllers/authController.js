@@ -10,6 +10,30 @@ const signToken = (id) => {
   });
 };
 
+const createSession = async (user, res) => {
+  user.lastLogin = new Date();
+  await user.save({ validateBeforeSave: false });
+
+  const employee = await Employee.findOne({ user: user._id })
+    .populate('department', 'name code')
+    .populate('manager', 'name email');
+
+  const token = signToken(user._id);
+  return res.status(200).json({
+    success: true,
+    token,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      lastLogin: user.lastLogin,
+    },
+    employee: employee || null,
+  });
+};
+
 /**
  * @desc    Login user & get token
  * @route   POST /api/auth/login
@@ -42,31 +66,39 @@ exports.login = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials. Password incorrect.' });
     }
 
-    // Update lastLogin
-    user.lastLogin = new Date();
-    await user.save({ validateBeforeSave: false });
+    return await createSession(user, res);
+  } catch (error) {
+    next(error);
+  }
+};
 
-    // Fetch associated employee profile
-    const employee = await Employee.findOne({ user: user._id })
-      .populate('department', 'name code')
-      .populate('manager', 'name email');
+/**
+ * @desc    Create a one-click session for a seeded demo account
+ * @route   POST /api/auth/demo-login
+ * @access  Public demo-only
+ */
+exports.demoLogin = async (req, res, next) => {
+  try {
+    if (process.env.DEMO_ACCOUNTS_ENABLED === 'false') {
+      return res.status(403).json({ success: false, message: 'Demo login is disabled.' });
+    }
 
-    // Create token
-    const token = signToken(user._id);
+    const demoAccounts = new Map([
+      ['admin', 'hr@staffsync.demo'],
+      ['manager', 'manager@staffsync.demo'],
+      ['employee', 'employee@staffsync.demo'],
+    ]);
+    const email = demoAccounts.get(req.body?.role);
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Choose a valid demo role.' });
+    }
 
-    res.status(200).json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        lastLogin: user.lastLogin,
-      },
-      employee: employee || null,
-    });
+    const user = await User.findOne({ email });
+    if (!user || !user.isActive) {
+      return res.status(404).json({ success: false, message: 'Demo account is not available.' });
+    }
+
+    return await createSession(user, res);
   } catch (error) {
     next(error);
   }

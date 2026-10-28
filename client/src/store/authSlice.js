@@ -15,7 +15,9 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await api.post('/api/auth/login', credentials);
+      const response = credentials.demoRole
+        ? await api.post('/api/auth/demo-login', { role: credentials.demoRole })
+        : await api.post('/api/auth/login', credentials);
       const { token, user, employee } = response.data;
       localStorage.setItem('staffsync_token', token);
       localStorage.setItem('staffsync_user', JSON.stringify({ ...user, employee }));
